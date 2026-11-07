@@ -1,0 +1,36 @@
+name: Build Electron App
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Clean Cache and Install Dependencies
+        shell: bash
+        run: |
+          rm -f package-lock.json
+          npm cache clean --force
+          npm install --legacy-peer-deps
+
+      - name: Build and Package App
+        run: npm run electron:build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MAZAJ-Coffee-Shop-Installer
+          path: dist-electron/*.exe
