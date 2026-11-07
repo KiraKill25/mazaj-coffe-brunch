@@ -2,7 +2,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Download, Trash2, UserPlus } from "lucide-react";
-import { applyClock, fmtDateTime, fmtDuration, setPos, toCsv, usePos, workedMs } from "@/lib/pos";
+import { applyClock, clockRegister, fmtDateTime, fmtDuration, setPos, toCsv, usePos, workedMs } from "@/lib/pos";
 import { LangBar, useDir } from "@/components/LangBar";
 import { PinGate } from "@/components/PinGate";
 import { PeriodPicker, initialPeriod, periodRange } from "@/components/PeriodPicker";
@@ -22,6 +22,11 @@ export const Route = createFileRoute("/attendance")({
   component: () => { useDir(); return <PinGate>{() => <Attendance />}</PinGate>; },
 });
 
+const REG = {
+  en: { title: "Entry & exit register", entry: "ENTRY", exit: "EXIT" },
+  fr: { title: "Registre des entrées & sorties", entry: "ENTRÉE", exit: "SORTIE" },
+  ar: { title: "سجل الدخول والخروج", entry: "دخول", exit: "خروج" },
+};
 const L = {
   en: { title: "Attendance", team: "Waiters", add: "Add", name: "First name", onDuty: "On duty now", none: "Nobody on duty", since: "since", history: "History", total: "Hours worked", in: "In", out: "Out", open: "in progress", csv: "Export CSV", del: "Remove this waiter?", empty: "No records in this period", clockIn: "Clock in", clockOut: "Clock out", confirmOut: "Record the exit for" },
   fr: { title: "Pointage", team: "Serveurs", add: "Ajouter", name: "Prénom", onDuty: "En service maintenant", none: "Personne en service", since: "depuis", history: "Historique", total: "Heures travaillées", in: "Entrée", out: "Sortie", open: "en cours", csv: "Exporter CSV", del: "Retirer ce serveur ?", empty: "Aucun pointage sur cette période", clockIn: "Pointer l'entrée", clockOut: "Pointer la sortie", confirmOut: "Enregistrer la sortie de" },
@@ -112,6 +117,17 @@ function Attendance() {
               const ms = workedMs(shifts.filter((s) => s.name === n), from, to, now);
               return <div key={n} className="flex justify-between rounded-xl bg-muted px-3 py-2 font-bold"><span>{n}</span><span>{fmtDuration(ms)}</span></div>;
             })}
+          </div>
+          <div className={`${card} space-y-2`}>
+            <h2 className="font-display text-lg font-extrabold">{REG[pos.lang].title}</h2>
+            {!shifts.length && <p className="text-muted-foreground">{t.empty}</p>}
+            {clockRegister(shifts).filter((e) => e.at >= from && e.at < to).map((e) => (
+              <div key={e.id} className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm ${e.kind === "in" ? "bg-success/15" : "bg-destructive/10"}`}>
+                <span className={`w-20 shrink-0 font-extrabold ${e.kind === "in" ? "text-success" : "text-destructive"}`}>{e.kind === "in" ? REG[pos.lang].entry : REG[pos.lang].exit}</span>
+                <span className="font-bold">{e.name}</span>
+                <span className="ms-auto">{fmtDateTime(e.at, pos.lang)}</span>
+              </div>
+            ))}
           </div>
           <div className={`${card} space-y-2`}>
             <h2 className="font-display text-lg font-extrabold">{t.history}</h2>
