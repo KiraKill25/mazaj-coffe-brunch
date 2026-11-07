@@ -78,13 +78,14 @@ function Waiter() {
     const id = setInterval(() => loadStaff(pin), 10000);
     return () => clearInterval(id);
   }, [pin, loadStaff]);
-  const C = { en: { in: "Clock in", out: "Clock out", since: "On duty since", off: "Not clocked in", confirm: "Clock out now?", pick: "Choose your name" }, fr: { in: "Pointer mon arrivée", out: "Pointer mon départ", since: "En service depuis", off: "Pas encore pointé", confirm: "Pointer votre départ maintenant ?", pick: "Choisissez votre prénom" }, ar: { in: "تسجيل الدخول", out: "تسجيل الخروج", since: "في الخدمة منذ", off: "لم تسجل الدخول بعد", confirm: "تسجيل الخروج الآن؟", pick: "اختر اسمك" } }[lang];
-  const clock = async (kind: "in" | "out") => {
-    if (kind === "out" && !window.confirm(C.confirm)) return;
+  const C = { en: { in: "Clock in", out: "Clock out", since: "On duty since", off: "Not clocked in", confirm: "Clock out now?", pick: "Choose your name", exited: "Exit recorded at" }, fr: { in: "Pointer mon entrée", out: "Pointer ma sortie", since: "Entrée enregistrée à", off: "Pas encore pointé", confirm: "Enregistrer votre sortie maintenant ?", pick: "Choisissez votre prénom", exited: "Sortie enregistrée à" }, ar: { in: "تسجيل الدخول", out: "تسجيل الخروج", since: "تم تسجيل الدخول في", off: "لم تسجل الدخول بعد", confirm: "تسجيل الخروج الآن؟", pick: "اختر اسمك", exited: "تم تسجيل الخروج في" } }[lang];
+  const [lastExit, setLastExit] = useState<number | null>(null);
+  const clock = async (kind: "in" | "out", p = pin, ask = true) => {
+    if (kind === "out" && ask && !window.confirm(C.confirm)) return;
     setClockBusy(true);
     try {
-      const r = await relay<{ onDuty: Record<string, number> }>({ action: "clock", pin, name: waiterName.trim(), kind });
-      if (r.onDuty) setOnDuty(r.onDuty); else setErr(w.offline);
+      const r = await relay<{ onDuty: Record<string, number> }>({ action: "clock", pin: p, name: waiterName.trim(), kind });
+      if (r.onDuty) { setOnDuty(r.onDuty); if (kind === "out") setLastExit(Date.now()); } else setErr(w.offline);
     } catch { setErr(w.offline); }
     setClockBusy(false);
   };
@@ -133,7 +134,7 @@ function Waiter() {
   const connect = async () => {
     const p = pinInput.trim();
     if (!waiterName.trim()) return;
-    if (await loadMenu(p)) { localStorage.setItem("mazaj-waiter-name", waiterName.trim()); localStorage.setItem(PIN_KEY, p); setPin(p); setPinInput(""); }
+    if (await loadMenu(p)) { localStorage.setItem("mazaj-waiter-name", waiterName.trim()); localStorage.setItem(PIN_KEY, p); setPin(p); setPinInput(""); if (!onDuty[waiterName.trim()]) void clock("in", p); }
   };
 
   const total = useMemo(() => cart.reduce((s, l) => s + l.item.price * l.qty, 0), [cart]);
@@ -195,13 +196,13 @@ function Waiter() {
           <ThemeToggle />
           <button onClick={() => { setRenewTable(""); setRenew(true); }} aria-label="Mazaj game" title="Mazaj game" className="flex h-11 items-center gap-1 rounded-xl bg-accent px-2 text-xs font-bold text-accent-foreground"><Sparkles size={16} /><span className="hidden sm:inline">{{ ar: "لعبة مزاج", fr: "Jeu Mazaj", en: "Mazaj game" }[lang]}</span></button>
           <button onClick={() => setShowOrders(true)} aria-label={w.orders} title={w.orders} className="relative grid h-11 w-11 place-items-center rounded-xl bg-accent text-accent-foreground"><ClipboardList size={18} />{orders.length > 0 && <span className="absolute -end-1 -top-1 min-w-5 rounded-full bg-primary px-1 text-xs leading-5 text-primary-foreground">{orders.length}</span>}</button>
-          <button onClick={async () => { if (dutySince && window.confirm(LX)) { try { await relay({ action: "clock", pin, name: waiterName.trim(), kind: "out" }); } catch { /* offline */ } } localStorage.removeItem(PIN_KEY); setPin(""); setMenu(null); }} aria-label={w.logout} title={w.logout} className="grid h-11 w-11 place-items-center rounded-xl bg-muted"><LogOut size={18} /></button>
+          <button onClick={async () => { if (dutySince && window.confirm(LX)) { try { await clock("out", pin, false); } catch { /* offline */ } } localStorage.removeItem(PIN_KEY); setPin(""); setMenu(null); }} aria-label={w.logout} title={w.logout} className="grid h-11 w-11 place-items-center rounded-xl bg-muted"><LogOut size={18} /></button>
         </div>
       </header>
       {editId && <div className="flex items-center gap-2 bg-accent px-4 py-2 font-bold text-accent-foreground"><Pencil size={16} /><span className="flex-1">{w.editing}</span><button onClick={stopEdit} className="h-9 rounded-lg bg-background/30 px-3 text-sm">{w.stopEdit}</button></div>}
-      {staff.includes(waiterName.trim()) && (
+      {waiterName.trim() && (
         <div className={`flex items-center gap-2 px-3 py-2 ${dutySince ? "bg-success/15" : "bg-muted"}`}>
-          <span className="flex-1 text-sm font-bold">{dutySince ? `${C.since} ${new Date(dutySince).toLocaleTimeString(lang === "ar" ? "ar-DZ" : lang === "fr" ? "fr-FR" : "en-GB", { hour: "2-digit", minute: "2-digit" })}` : C.off}</span>
+          <span className="flex-1 text-sm font-bold">{dutySince ? `${C.since} ${fmtDateTime(dutySince, lang)}` : lastExit ? `${C.exited} ${fmtDateTime(lastExit, lang)}` : C.off}</span>
           <button onClick={() => clock(dutySince ? "out" : "in")} disabled={clockBusy} className={`h-10 rounded-xl px-4 text-sm font-extrabold disabled:opacity-50 ${dutySince ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}`}>{dutySince ? C.out : C.in}</button>
         </div>
       )}
