@@ -23,6 +23,7 @@ const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("pull"), key: z.string().min(16).max(64), ack: z.array(z.string().max(64)).max(500).optional() }),
   z.object({ action: z.literal("staff"), pin: z.string().max(8) }),
   z.object({ action: z.literal("clock"), pin: z.string().max(8), name: z.string().trim().min(1).max(30), kind: z.enum(["in", "out"]) }),
+  z.object({ action: z.literal("reset"), key: z.string().min(16).max(64) }),
   z.object({ action: z.literal("done"), key: z.string().min(16).max(64), id: z.string().max(64) }),
   z.object({ action: z.literal("decide"), key: z.string().min(16).max(64), id: z.string().max(64), approve: z.boolean() }),
   z.object({ action: z.literal("menu"), pin: z.string().max(8) }),
@@ -50,6 +51,11 @@ export const Route = createFileRoute("/api/public/waiter")({
         if (!parsed.success) return json({ error: "bad_request" }, 400);
         const b = parsed.data;
         const r = relay();
+        if (b.action === "reset") {
+          if (r.key && r.key !== b.key) return json({ error: "other_register" }, 403);
+          g.__mazajRelay = { menuAt: 0, orders: [] };
+          return json({ ok: true });
+        }
         if (b.action === "sync" || b.action === "pull" || b.action === "done" || b.action === "decide") {
           if (r.key && r.key !== b.key) return json({ error: "other_register" }, 403);
           r.key = b.key;
@@ -79,7 +85,8 @@ export const Route = createFileRoute("/api/public/waiter")({
         if (b.action === "list") return json({ orders: r.orders });
         if (b.action === "staff") return json({ staff: r.staff ?? [], onDuty: r.onDuty ?? {} });
         if (b.action === "clock") {
-          if (!(r.staff ?? []).includes(b.name)) return json({ error: "unknown_staff" }, 404);
+          // Any waiter can clock in; new names are added to the team list automatically.
+          if (!(r.staff ?? []).includes(b.name)) r.staff = [...(r.staff ?? []), b.name].slice(-100);
           const on = r.onDuty ?? {};
           if (b.kind === "in" && on[b.name]) return json({ staff: r.staff, onDuty: on });
           if (b.kind === "out" && !on[b.name]) return json({ staff: r.staff, onDuty: on });
