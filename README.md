@@ -1,14 +1,27 @@
-# Welcome to your Lovable project
+# Curbside Chef
+
+I'm the owner of a fast food business and I want to create an app that helps me with the register. Shows the menu with a picture of the dish. A POS system.
+
+Key requirements:
+- Works seamlessly on a tablet and on PC/desktop with a modern, simplified, touch-friendly layout and an appealing warm culinary color palette.
+- One shared register interface.
+- Trilingual support: English, French, and Arabic with full Right-to-Left (RTL) layout switching when Arabic is selected.
+- Customer bill printing formatted for standard thermal receipts (80mm) immediately after entering an order, plus kitchen tickets formatted in French.
+- Quick cash calculation (presets, change owed) and card payment checkout.
+- Menu management section (protected by manager PIN) where I can add items with photos, update prices, remove items, or mark items as out of stock.
+- Dine-in and Takeaway order tagging with sequential order numbers (#001, #002...).
 
 This project was built with [Lovable](https://lovable.dev).
 
+**Live app**: https://curbside-chef.lovable.app
+
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/7c1004b7-e554-48cd-8edf-f4464368a1df).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -21,9 +34,16 @@ npm i
 npm run dev
 ```
 
-## Built with
+## Windows: instant printing
+Double-click `Start-Mazaj.bat`. It starts the server and opens the register in Chrome (or Edge) with `--kiosk-printing`, so receipts print straight to the **default Windows printer** with no dialog.
+- Set your thermal printer as the default printer.
+- Cash drawer: in the printer driver Properties → Device Settings / Cash Drawer, set "Open drawer before printing".
+- Close all other Chrome windows the first time if printing still shows a dialog.
 
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+## Windows installer (any PC, fully offline)
+Build once on your PC (needs Node.js LTS and [Inno Setup](https://jrsoftware.org/isdl.php)):
+1. Download `node.exe` (https://nodejs.org/dist/latest-v22.x/win-x64/node.exe) into the `windows` folder.
+2. Double-click `windows\build-desktop.bat`.
+3. Right-click `windows\Mazaj-Setup.iss` → **Compile**. The installer appears in `windows\Output\`.
+
+Copy `Mazaj-POS-Setup-v1.0.0.exe` to any Windows PC (no Node.js needed). It adds a desktop shortcut, opens the register with instant printing, opens the firewall for waiter phones on private Wi-Fi, and includes all menu photos and fonts so nothing needs internet.
