@@ -45,6 +45,15 @@ export type PosState = {
 
 export type Shift = { id: string; name: string; in: number; out?: number | undefined };
 export type ClockEvent = { id: string; name: string; kind: "in" | "out"; at: number };
+/** Flattens shifts into a chronological entry/exit register (newest first). */
+export function clockRegister(shifts: Shift[]) {
+  const ev: { id: string; name: string; kind: "in" | "out"; at: number }[] = [];
+  for (const s of shifts) {
+    ev.push({ id: s.id + ":in", name: s.name, kind: "in", at: s.in });
+    if (s.out) ev.push({ id: s.id + ":out", name: s.name, kind: "out", at: s.out });
+  }
+  return ev.sort((a, b) => b.at - a.at);
+}
 /** Applies a waiter clock event to the attendance list (idempotent by event id). */
 export function applyClock(list: Shift[] | undefined, e: ClockEvent): Shift[] {
   const l = list ?? [];
@@ -119,7 +128,8 @@ function load(): PosState {
 /** Factory reset: back to a brand-new install (keeps only the display language). */
 export function resetToFactory() {
   const lang = load().lang;
-  state = { ...seed(), lang };
+  // Explicitly wipe every history list (sales, past days/Z-reports, expenses, staff, attendance, waiter log).
+  state = { ...seed(), lang, sales: [], sessions: [], expenses: [], tabs: [], staff: [], attendance: [], waiterLog: [], nextOrder: 1, orderDay: "", lastBackup: 0 };
   try {
     // Drop every app key (old versions, caches) except display preferences.
     const keep = new Set(["mazaj-theme", "mazaj-waiter-host"]);
@@ -142,6 +152,15 @@ export function setPos(update: (s: PosState) => PosState) {
     alert("Storage full — use smaller photos.");
   }
   listeners.forEach((l) => l());
+}
+
+// Another app window (old in-memory data) must not write erased data back: follow localStorage changes.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key !== KEY && e.key !== null) return;
+    try { const raw = localStorage.getItem(KEY); state = raw ? { ...seed(), ...JSON.parse(raw) } : seed(); } catch { state = seed(); }
+    listeners.forEach((l) => l());
+  });
 }
 
 const serverSnap = seed();

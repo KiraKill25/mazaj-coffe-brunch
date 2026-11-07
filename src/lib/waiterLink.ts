@@ -63,7 +63,7 @@ export function useWaiterLink(pos: PosState, enabled = true) {
         const r = await relay<{ orders: WaiterOrder[]; clocks?: ClockEvent[] }>({ action: "pull", key: pos.linkKey, ack });
         if (stop || !r.orders) return;
         acked.current = (r.clocks ?? []).map((e) => e.id);
-        if (r.clocks?.length) setPos((s) => ({ ...s, attendance: r.clocks!.reduce(applyClock, s.attendance ?? []) }));
+        if (r.clocks?.length) setPos((s) => ({ ...s, staff: [...new Set([...(s.staff ?? []), ...r.clocks!.map((e) => e.name)])], attendance: r.clocks!.reduce(applyClock, s.attendance ?? []) }));
         const prev = seen.current;
         if (prev) {
           const entries = diffOrders(prev, r.orders);
