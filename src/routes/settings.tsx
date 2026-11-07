@@ -5,6 +5,7 @@ import { ArrowLeft, Download, Upload } from "lucide-react";
 import { CX, TX, fmtDateTime, replacePos, resetToFactory, setPos, toCsv, usePos, type PosState } from "@/lib/pos";
 import { LangBar, useDir } from "@/components/LangBar";
 import { PinGate } from "@/components/PinGate";
+import { relay } from "@/lib/waiterLink";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -68,28 +69,23 @@ function Settings({ lock }: { lock: () => void }) {
     fr: { btn: "Réinitialisation complète (tout effacer)", backup: "Une sauvegarde complète va d'abord être enregistrée. Continuer ?", noBackup: "La sauvegarde a été téléchargée dans votre dossier Téléchargements. Continuer la réinitialisation ?", pin: "Saisissez le PIN gérant pour confirmer la réinitialisation :", wrong: "PIN incorrect — réinitialisation annulée.", confirm: "DERNIER AVERTISSEMENT : ventes, clôtures, charges, notes de table, numéros de commande, modifications du menu et PIN (remis à 1234) seront effacés. Continuer ?", done: "L'application a été réinitialisée." },
     ar: { btn: "إعادة ضبط المصنع (مسح كل شيء)", backup: "سيتم حفظ نسخة احتياطية كاملة أولاً. متابعة؟", noBackup: "تم تنزيل النسخة الاحتياطية في مجلد التنزيلات. متابعة إعادة الضبط؟", pin: "أدخل رمز المدير لتأكيد إعادة الضبط:", wrong: "رمز خاطئ — أُلغيت إعادة الضبط.", confirm: "تحذير أخير: سيتم مسح المبيعات والجلسات والمصاريف والطاولات المفتوحة وأرقام الطلبات وتعديلات القائمة والرمز (يعود إلى 1234). متابعة؟", done: "تمت إعادة ضبط التطبيق." },
   }[pos.lang];
+  // In-app confirmation (browser prompt/confirm popups are unreliable in the desktop app window).
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetPin, setResetPin] = useState("");
+  const [resetErr, setResetErr] = useState(false);
   const factoryReset = async () => {
-    if (!confirm(RX.backup)) return;
+    if (resetPin !== pos.pin) { setResetErr(true); return; }
+    // Safety backup straight to the Downloads folder (no dialog).
     const data = JSON.stringify({ app: "mazaj-pos", version: 1, savedAt: Date.now(), data: pos });
-    const name = `MAZAJ-backup-avant-reinit-${stamp()}.json`;
-    let ok = false;
-    try { ok = await saveFile(name, data, "application/json"); } catch { ok = false; }
-    if (!ok) {
-      // Fallback: plain download (always works in app mode)
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([data], { type: "application/json" }));
-      a.download = name;
-      a.click();
-      if (!confirm(RX.noBackup)) return;
-    }
-    const p = prompt(RX.pin);
-    if (p === null) return;
-    if (p !== pos.pin) { alert(RX.wrong); return; }
-    if (!confirm(RX.confirm)) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([data], { type: "application/json" }));
+    a.download = `MAZAJ-backup-avant-reinit-${stamp()}.json`;
+    a.click();
+    // Clear waiter orders / clock-ins waiting on the local relay so nothing syncs back.
+    if (pos.linkKey) { try { await relay({ action: "reset", key: pos.linkKey }); } catch { /* offline */ } }
     resetToFactory();
-    alert(RX.done);
     lock();
-    window.location.replace("/");
+    setTimeout(() => window.location.replace("/"), 400);
   };
   const restore = async (f: File) => {
     try {
@@ -148,7 +144,21 @@ function Settings({ lock }: { lock: () => void }) {
           </div>
           <button onClick={() => confirm(`${t.resetCounter}?`) && setPos((s) => ({ ...s, nextOrder: 1, orderDay: "" }))} className="h-12 w-full rounded-xl bg-muted font-bold">{t.resetCounter} (#001)</button>
           <button onClick={lock} className="h-12 w-full rounded-xl bg-muted font-bold">{t.lock}</button>
-          <button onClick={() => void factoryReset()} className="h-12 w-full rounded-xl bg-destructive font-bold text-destructive-foreground">{RX.btn}</button>
+          {!resetOpen ? (
+            <button onClick={() => { setResetOpen(true); setResetPin(""); setResetErr(false); }} className="h-12 w-full rounded-xl bg-destructive font-bold text-destructive-foreground">{RX.btn}</button>
+          ) : (
+            <div className="space-y-2 rounded-xl border-2 border-destructive bg-destructive/10 p-3">
+              <p className="text-sm font-bold text-destructive">{RX.confirm}</p>
+              <p className="text-xs text-muted-foreground">{RX.noBackup}</p>
+              <label className="block text-sm font-bold">{RX.pin}</label>
+              <input type="password" inputMode="numeric" autoFocus value={resetPin} onChange={(e) => { setResetPin(e.target.value.replace(/\D/g, "")); setResetErr(false); }} className={input} />
+              {resetErr && <p className="text-sm font-bold text-destructive">{RX.wrong}</p>}
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => setResetOpen(false)} className="h-12 rounded-xl bg-muted font-bold">{t.cancel}</button>
+                <button onClick={() => void factoryReset()} disabled={!resetPin} className="h-12 rounded-xl bg-destructive font-bold text-destructive-foreground disabled:opacity-40">{RX.btn}</button>
+              </div>
+            </div>
+          )}
         </section>
       </div>
     </div>
