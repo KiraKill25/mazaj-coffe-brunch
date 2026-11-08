@@ -41,8 +41,10 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{sys}\wscript.exe"; Parameters: """
 Name: "{userstartup}\{#AppName}"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\MAZAJ.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\mazaj.ico"; Tasks: autostart
 
 [Run]
-; Let waiter phones on the same Wi-Fi reach the PC (private networks only).
-Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""MAZAJ Coffee Shop"" dir=in action=allow program=""{app}\node.exe"" enable=yes profile=private"; Flags: runhidden
+; Replace the old rule on upgrades. Allow same-LAN phones on all Windows profiles,
+; but only on MAZAJ's TCP port, not every Node port or internet source.
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""MAZAJ Coffee Shop"""; Flags: runhidden
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""MAZAJ Coffee Shop"" dir=in action=allow program=""{app}\node.exe"" enable=yes profile=any protocol=TCP localport=8080 remoteip=LocalSubnet"; Flags: runhidden
 Filename: "{sys}\wscript.exe"; Parameters: """{app}\MAZAJ.vbs"""; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: postinstall nowait skipifsilent
 
 [UninstallRun]
