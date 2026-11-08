@@ -50,3 +50,9 @@ Filename: "{sys}\wscript.exe"; Parameters: """{app}\MAZAJ.vbs"""; Description: "
 [UninstallRun]
 Filename: "{app}\Stop-MAZAJ.bat"; Flags: runhidden; RunOnceId: "StopServer"
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""MAZAJ Coffee Shop"""; Flags: runhidden; RunOnceId: "DelFirewall"
+; Close the MAZAJ app window (Chrome/Edge using the MazajPOS profile) so its data files are not locked.
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-CimInstance Win32_Process | Where-Object {{ $_.CommandLine -like '*MazajPOS*' } | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Seconds 2"""; Flags: runhidden; RunOnceId: "CloseAppWindow"
+
+[UninstallDelete]
+; Uninstall = full wipe: sales, register sessions, clock-in/out history and settings live in this browser profile.
+Type: filesandordirs; Name: "{localappdata}\MazajPOS"
