@@ -2,3 +2,4 @@
 - [x] Cash drawer opening/closing with Z-report
 - [x] Daily order number reset + order cancellation
 - [x] Locale-aware dates
+- [ ] Strengthen LAN address detection and Windows firewall access; verify network rules.
