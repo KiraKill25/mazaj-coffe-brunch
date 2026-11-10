@@ -67,7 +67,7 @@ function Waiter() {
   useEffect(() => {
     if (!anyPopup) return;
     const b = document.body, h = document.documentElement;
-    const prev = [b.style.overflow, h.style.overflow, h.style.overscrollBehavior];
+    const prev: [string, string, string] = [b.style.overflow, h.style.overflow, h.style.overscrollBehavior];
     b.style.overflow = "hidden"; h.style.overflow = "hidden"; h.style.overscrollBehavior = "none";
     return () => { b.style.overflow = prev[0]; h.style.overflow = prev[1]; h.style.overscrollBehavior = prev[2]; };
   }, [anyPopup]);
