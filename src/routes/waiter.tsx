@@ -63,6 +63,14 @@ function Waiter() {
   const [renewTable, setRenewTable] = useState("");
 
   useEffect(() => { setPin(localStorage.getItem(PIN_KEY) ?? ""); }, []);
+  const anyPopup = open || showOrders || renew || !!sent;
+  useEffect(() => {
+    if (!anyPopup) return;
+    const b = document.body, h = document.documentElement;
+    const prev: [string, string, string] = [b.style.overflow ?? "", h.style.overflow ?? "", h.style.overscrollBehavior ?? ""];
+    b.style.overflow = "hidden"; h.style.overflow = "hidden"; h.style.overscrollBehavior = "none";
+    return () => { b.style.overflow = prev[0]; h.style.overflow = prev[1]; h.style.overscrollBehavior = prev[2]; };
+  }, [anyPopup]);
 
   // Staff list (declared by the manager) and who is clocked in
   const [staff, setStaff] = useState<string[]>([]);
@@ -242,7 +250,7 @@ function Waiter() {
       )}
 
       {open && (
-        <div className="fixed inset-0 z-40 flex items-end bg-foreground/40" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-40 flex items-end overscroll-contain bg-foreground/40" onClick={() => setOpen(false)}>
           <div className="max-h-[90dvh] w-full space-y-3 overflow-y-auto overscroll-contain rounded-t-3xl bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between gap-2">
               <h2 className="font-display text-xl font-extrabold">{w.cart}</h2>
@@ -274,7 +282,7 @@ function Waiter() {
       )}
 
       {showOrders && (
-        <div className="fixed inset-0 z-40 flex items-end bg-foreground/40" onClick={() => setShowOrders(false)}>
+        <div className="fixed inset-0 z-40 flex items-end overscroll-contain bg-foreground/40" onClick={() => setShowOrders(false)}>
           <div className="max-h-[90dvh] w-full space-y-3 overflow-y-auto overscroll-contain rounded-t-3xl bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h2 className="font-display text-xl font-extrabold">{w.orders} ({orders.length})</h2>
@@ -305,8 +313,8 @@ function Waiter() {
       )}
 
       {renew && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/50 p-4" onClick={() => setRenew(false)}>
-          <div className="w-full max-w-sm space-y-3 rounded-3xl bg-card p-6 text-center shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 grid place-items-center overscroll-contain bg-foreground/50 p-4" onClick={() => setRenew(false)}>
+          <div className="max-h-[90dvh] w-full max-w-sm space-y-3 overflow-y-auto overscroll-contain rounded-3xl bg-card p-6 text-center shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h2 className="font-display text-2xl font-black">{{ ar: "تجديد لعبة مزاج", fr: "Renouveler le jeu Mazaj", en: "Renew Mazaj game" }[lang]}</h2>
             <input inputMode="numeric" value={renewTable} onChange={(e) => setRenewTable(e.target.value)} placeholder={w.table} className="h-12 w-full rounded-xl border border-input bg-background px-3 text-center text-lg font-bold" />
             {renewTable.trim() && (
@@ -323,8 +331,8 @@ function Waiter() {
       )}
 
       {sent && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/50 p-4">
-          <div className="w-full max-w-sm space-y-3 rounded-3xl bg-card p-6 text-center shadow-xl">
+        <div className="fixed inset-0 z-50 grid place-items-center overscroll-contain bg-foreground/50 p-4">
+          <div className="max-h-[90dvh] w-full max-w-sm space-y-3 overflow-y-auto overscroll-contain rounded-3xl bg-card p-6 text-center shadow-xl">
             <h2 className="font-display text-2xl font-black text-success">✓ {sent.modifiedAt ? w.updated : w.sent}</h2>
             <p className="font-display text-xl font-extrabold">{sent.table ? `${w.table}: ${sent.table}` : t.takeaway}</p>
             <ul className="text-start">{sent.lines.map((l) => <li key={l.id} className="flex justify-between"><span>{l.qty} × {l.name[lang]}</span><span>{money(l.price * l.qty, cur)}</span></li>)}</ul>
