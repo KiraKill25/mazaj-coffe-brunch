@@ -52,5 +52,5 @@ End If
 If browser = "" Then
   sh.Run url, 1, False
 Else
-  sh.Run """" & browser & """ --kiosk-printing --app=" & url & " --user-data-dir=""" & profile & """ --start-maximized", 1, False
+  sh.Run """" & browser & """ --app=" & url & " --user-data-dir=""" & profile & """ --start-maximized", 1, False
 End If

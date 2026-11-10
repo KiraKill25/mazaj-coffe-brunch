@@ -35,7 +35,7 @@ npm run dev
 ```
 
 ## Windows: instant printing
-Double-click `Start-Mazaj.bat`. It starts the server and opens the register in Chrome (or Edge) with `--kiosk-printing`, so receipts print straight to the **default Windows printer** with no dialog.
+Double-click `Start-Mazaj.bat`. It starts the server and opens the register in Chrome (or Edge) and shows the print dialog so you can pick the printer, paper size and margins.
 - Set your thermal printer as the default printer.
 - Cash drawer: in the printer driver Properties → Device Settings / Cash Drawer, set "Open drawer before printing".
 - Close all other Chrome windows the first time if printing still shows a dialog.

@@ -12,11 +12,11 @@ set URL=http://localhost:8080
 set PROFILE=%LOCALAPPDATA%\MazajPOS
 
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" (
-  start "" "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --kiosk-printing --app=%URL% --user-data-dir="%PROFILE%"
+  start "" "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --app=%URL% --user-data-dir="%PROFILE%"
   goto :eof
 )
 if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" (
-  start "" "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --kiosk-printing --app=%URL% --user-data-dir="%PROFILE%"
+  start "" "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --app=%URL% --user-data-dir="%PROFILE%"
   goto :eof
 )
-start "" msedge --kiosk-printing --app=%URL% --user-data-dir="%PROFILE%"
+start "" msedge --app=%URL% --user-data-dir="%PROFILE%"
